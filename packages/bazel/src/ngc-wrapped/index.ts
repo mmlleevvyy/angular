@@ -27,6 +27,8 @@ const ALLOW_NON_HERMETIC_READS = true;
 // Note: We compile the content of node_modules with plain ngc command line.
 const ALL_DEPS_COMPILED_WITH_BAZEL = false;
 
+const NODE_MODULES = 'node_modules/';
+
 export function main(args) {
   if (runAsWorker(args)) {
     runWorkerLoop(runOneBuild);
@@ -164,13 +166,25 @@ export function compile({allowNonHermeticReads, allDepsCompiledWithBazel = true,
     }
     return origBazelHostFileExist.call(bazelHost, fileName);
   };
+  const origBazelHostShouldNameModule = bazelHost.shouldNameModule.bind(bazelHost);
+  bazelHost.shouldNameModule = (fileName: string) =>
+      origBazelHostShouldNameModule(fileName) || NGC_GEN_FILES.test(fileName);
 
   const ngHost = ng.createCompilerHost({options: compilerOpts, tsHost: bazelHost});
 
-  ngHost.fileNameToModuleName = (importedFilePath: string, containingFilePath: string) =>
-      relativeToRootDirs(importedFilePath, compilerOpts.rootDirs).replace(EXT, '');
+  ngHost.fileNameToModuleName = (importedFilePath: string, containingFilePath: string) => {
+    if ((compilerOpts.module === ts.ModuleKind.UMD || compilerOpts.module === ts.ModuleKind.AMD) &&
+        ngHost.amdModuleName) {
+      return ngHost.amdModuleName({ fileName: importedFilePath } as ts.SourceFile);
+    }
+    const result = relativeToRootDirs(importedFilePath, compilerOpts.rootDirs).replace(EXT, '');
+    if (result.startsWith(NODE_MODULES)) {
+      return result.substr(NODE_MODULES.length);
+    }
+    return bazelOpts.workspaceName + '/' + result;
+  };
   ngHost.toSummaryFileName = (fileName: string, referringSrcFileName: string) =>
-      ngHost.fileNameToModuleName(fileName, referringSrcFileName);
+      relativeToRootDirs(fileName, compilerOpts.rootDirs).replace(EXT, '');
   if (allDepsCompiledWithBazel) {
     // Note: The default implementation would work as well,
     // but we can be faster as we know how `toSummaryFileName` works.

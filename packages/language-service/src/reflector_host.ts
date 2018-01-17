@@ -72,8 +72,10 @@ export class ReflectorHost implements StaticSymbolResolverHost {
       containingFile = path.join(this.options.basePath !, 'index.ts');
     }
     const resolved =
-        ts.resolveModuleName(moduleName, containingFile, this.options, this.hostAdapter)
+        ts.resolveModuleName(moduleName, containingFile !, this.options, this.hostAdapter)
             .resolvedModule;
     return resolved ? resolved.resolvedFileName : null;
   }
+
+  getOutputName(filePath: string) { return filePath; }
 }

@@ -9,14 +9,14 @@
 import {DatePipe, registerLocaleData} from '@angular/common';
 import {PipeResolver} from '@angular/compiler/src/pipe_resolver';
 import {JitReflector} from '@angular/platform-browser-dynamic/src/compiler_reflector';
-import localeEn from '../../locales/en';
-import localeEnExtra from '../../locales/extra/en';
-import localeDe from '../../locales/de';
-import localeHu from '../../locales/hu';
-import localeSr from '../../locales/sr';
-import localeTh from '../../locales/th';
+import localeEn from '@angular/common/locales/en';
+import localeEnExtra from '@angular/common/locales/extra/en';
+import localeDe from '@angular/common/locales/de';
+import localeHu from '@angular/common/locales/hu';
+import localeSr from '@angular/common/locales/sr';
+import localeTh from '@angular/common/locales/th';
 
-export function main() {
+{
   describe('DatePipe', () => {
     let date: Date;
     const isoStringWithoutTime = '2015-01-01';
@@ -263,10 +263,10 @@ export function main() {
       });
 
       it('should format invalid in IE ISO date',
-         () => expect(pipe.transform('2017-01-11T09:25:14.014-0500')).toEqual('Jan 11, 2017'));
+         () => expect(pipe.transform('2017-01-11T12:00:00.014-0500')).toEqual('Jan 11, 2017'));
 
       it('should format invalid in Safari ISO date',
-         () => expect(pipe.transform('2017-01-20T19:00:00+0000')).toEqual('Jan 20, 2017'));
+         () => expect(pipe.transform('2017-01-20T12:00:00+0000')).toEqual('Jan 20, 2017'));
 
       // test for the following bugs:
       // https://github.com/angular/angular/issues/9524
@@ -274,6 +274,16 @@ export function main() {
       it('should format correctly with iso strings that contain time',
          () => expect(pipe.transform('2017-05-07T22:14:39', 'dd-MM-yyyy HH:mm'))
                    .toMatch(/07-05-2017 \d{2}:\d{2}/));
+
+      // test for issue https://github.com/angular/angular/issues/21491
+      it('should not assume UTC for iso strings in Safari if the timezone is not defined', () => {
+        // this test only works if the timezone is not in UTC
+        // which is the case for BrowserStack when we test Safari
+        if (new Date().getTimezoneOffset() !== 0) {
+          expect(pipe.transform('2018-01-11T13:00:00', 'HH'))
+              .not.toEqual(pipe.transform('2018-01-11T13:00:00Z', 'HH'));
+        }
+      });
 
       // test for the following bugs:
       // https://github.com/angular/angular/issues/16624

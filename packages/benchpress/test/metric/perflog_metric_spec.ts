@@ -12,7 +12,7 @@ import {AsyncTestCompleter, beforeEach, describe, expect, inject, it} from '@ang
 import {Injector, Metric, Options, PerfLogEvent, PerfLogFeatures, PerflogMetric, WebDriverExtension} from '../../index';
 import {TraceEventFactory} from '../trace_event_factory';
 
-export function main() {
+(function() {
   let commandLog: any[];
   const eventFactory = new TraceEventFactory('timeline', 'pid0');
 
@@ -537,6 +537,24 @@ export function main() {
            });
          }));
 
+      it('should mark a run as invalid if the start and end marks are different',
+         inject([AsyncTestCompleter], (async: AsyncTestCompleter) => {
+           const otherProcessEventFactory = new TraceEventFactory('timeline', 'pid1');
+           const metric = createMetric(
+               [[
+                 eventFactory.markStart('benchpress0', 0), eventFactory.start('script', 0, null),
+                 eventFactory.end('script', 5, null),
+                 otherProcessEventFactory.start('script', 10, null),
+                 otherProcessEventFactory.end('script', 17, null),
+                 otherProcessEventFactory.markEnd('benchpress0', 20)
+               ]],
+               null !);
+           metric.beginMeasure().then((_) => metric.endMeasure(false)).then((data) => {
+             expect(data['invalid']).toBe(1);
+             async.done();
+           });
+         }));
+
       it('should support scriptTime metric',
          inject([AsyncTestCompleter], (async: AsyncTestCompleter) => {
            aggregate([
@@ -680,7 +698,7 @@ export function main() {
     });
 
   });
-}
+})();
 
 class MockDriverExtension extends WebDriverExtension {
   constructor(

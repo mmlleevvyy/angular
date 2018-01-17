@@ -1,8 +1,10 @@
 language: node_js
-sudo: false
+# Work-around for https://github.com/travis-ci/travis-ci/issues/8836#issuecomment-356362524.
+# (Restore `sudo: false` once that is resolved.)
+sudo: required
 dist: trusty
 node_js:
-  - '6.9.5'
+  - '8.9.1'
 
 addons:
 #  firefox: "38.0"
@@ -54,7 +56,6 @@ env:
     - CI_MODE=browserstack_optional
     - CI_MODE=aio_tools_test
     - CI_MODE=aio
-    - CI_MODE=aio_optional
     - CI_MODE=aio_e2e AIO_SHARD=0
     - CI_MODE=aio_e2e AIO_SHARD=1
     - CI_MODE=bazel
@@ -64,7 +65,6 @@ matrix:
   allow_failures:
     - env: "CI_MODE=saucelabs_optional"
     - env: "CI_MODE=browserstack_optional"
-    - env: "CI_MODE=aio_optional"
 
 before_install:
   # source the env.sh script so that the exported variables are available to other scripts later on

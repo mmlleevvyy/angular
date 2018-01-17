@@ -172,7 +172,7 @@ export class EmittingCompilerHost implements ts.CompilerHost {
 
   writeFile: ts.WriteFileCallback =
       (fileName: string, data: string, writeByteOrderMark: boolean,
-       onError?: (message: string) => void, sourceFiles?: ts.SourceFile[]) => {
+       onError?: (message: string) => void, sourceFiles?: ReadonlyArray<ts.SourceFile>) => {
         this.addWrittenFile(fileName, data);
         if (this.options.emitMetadata && sourceFiles && sourceFiles.length && DTS.test(fileName)) {
           const metadataFilePath = fileName.replace(DTS, '.metadata.json');
@@ -386,6 +386,8 @@ export class MockAotCompilerHost implements AotCompilerHost {
     return resolved ? resolved.resolvedFileName : null;
   }
 
+  getOutputName(filePath: string) { return filePath; }
+
   resourceNameToFileName(resourceName: string, containingFile: string) {
     // Note: we convert package paths into relative paths to be compatible with the the
     // previous implementation of UrlResolver.
@@ -430,7 +432,7 @@ export class MockMetadataBundlerHost implements MetadataBundlerHost {
 
   getMetadataFor(moduleName: string): ModuleMetadata|undefined {
     const source = this.host.getSourceFile(moduleName + '.ts', ts.ScriptTarget.Latest);
-    return this.collector.getMetadata(source);
+    return source && this.collector.getMetadata(source);
   }
 }
 
@@ -603,7 +605,7 @@ export function expectNoDiagnostics(program: ts.Program) {
     return '';
   }
 
-  function expectNoDiagnostics(diagnostics: ts.Diagnostic[]) {
+  function expectNoDiagnostics(diagnostics: ReadonlyArray<ts.Diagnostic>) {
     if (diagnostics && diagnostics.length) {
       throw new Error(
           'Errors from TypeScript:\n' +
